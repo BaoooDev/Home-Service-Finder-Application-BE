@@ -1,26 +1,30 @@
-const express = require('express');
-const router = express.Router();
-const authenticateJWT = require("../middleware/auth");
-const cookieParser = require("cookie-parser");
-const app = express();
+const express = require('express')
+const router = express.Router()
+const authenticateJWT = require('../middleware/auth')
+const cookieParser = require('cookie-parser')
+const app = express()
 
-app.use(express.json());
-app.use(cookieParser());
+app.use(express.json())
+app.use(cookieParser())
 
-const { loginClient, loginWorker,registerClient,registerWorker } = require('../controllers/userController');
-const { createJob } = require('../controllers/jobController');
+const { login, registerClient, registerWorker, getMe } = require('../controllers/userController')
+const { createJob, queryJobsForWorker, queryJobHistories } = require('../controllers/jobController')
+const { createNoti, queryNoties } = require('../controllers/notiController')
 
+router.post('/users/registerClient', registerClient)
+router.post('/users/registerWorker', registerWorker)
 
-router.post('/users/registerClient', registerClient);
-router.post('/users/registerWorker', registerWorker);
+// Đăng nhập
+router.post('/login', login)
+router.get('/me', authenticateJWT, getMe)
 
-// Đăng nhập client
-router.post('/login/client', loginClient);
+// Job
+router.get('/jobs', authenticateJWT, queryJobsForWorker)
+router.get('/jobs/history', authenticateJWT, queryJobHistories)
+router.post('/jobs', authenticateJWT, createJob)
 
-// Đăng nhập worker
-router.post('/login/worker', loginWorker);
+// Notification
+router.get('/notification', authenticateJWT, queryNoties)
+router.post('/notification', authenticateJWT, createNoti)
 
-router.post('/jobs/create',authenticateJWT, createJob);
-
-
-module.exports = router;
+module.exports = router

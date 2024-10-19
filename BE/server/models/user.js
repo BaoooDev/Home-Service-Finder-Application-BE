@@ -1,60 +1,70 @@
-const mongoose = require('mongoose')
-const { Schema } = mongoose
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
+const AddressSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  address: { type: String, required: true }
+});
 
 // Client Profile Schema
-const ClientProfileSchema = new Schema({
-  jobs: [
-    {
-      job_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
-      status: {
-        type: String,
-        enum: ['pending', 'confirmed', 'in_progress', 'completed', 'canceled'],
-      },
-      scheduled_time: { type: Date },
-      worker_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    },
-  ],
-})
+const ClientProfileSchema = new mongoose.Schema({
+  jobs: [{
+    job_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },  // Reference to jobs created by the client
+    status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'completed', 'canceled'] },
+  }],
+  addresses: [AddressSchema],  // List of addresses for the client
+});
 
 // Worker Profile Schema
-const WorkerProfileSchema = new Schema({
-  identity_number: String,
-  is_verified: { type: Boolean, default: false },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-})
+const WorkerProfileSchema = new mongoose.Schema({
+  identity_number: { type: String, required: true },  // Worker’s identity number
+  certifications: { type: String },  // Certifications for the worker (optional)
+  is_verified: { type: Boolean, default: false },  // Whether the worker is verified by an admin
+  rating: { type: Number, default: 0 },  // Worker’s overall rating
+  jobs_completed: { type: Number, default: 0 },  // Total jobs completed by the worker
+  assigned_jobs: [{ 
+    job_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },  // Jobs assigned to the worker
+    status: { type: String, enum: ['in_progress', 'completed'] },  // Job status for the worker
+    accepted_time: { type: Date },  // When the worker accepted the job
+    completion_time: { type: Date },  // When the job was completed
+  }]
+});
 
-// Admin Profile Schema
-const AdminProfileSchema = new Schema({
-  verified_workers: [
-    {
-      worker_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      verification_date: { type: Date },
-    },
-  ],
-  rejected_workers: [
-    {
-      worker_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      rejection_reason: String,
-      rejection_date: { type: Date },
-    },
-  ],
-})
+const AdminProfileSchema = new mongoose.Schema({
+  verified_workers: [{
+    worker_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    verification_date: { type: Date, default: Date.now }
+  }],
+  rejected_workers: [{
+    worker_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    rejection_reason: { type: String },
+    rejection_date: { type: Date, default: Date.now }
+  }],
+  suspended_users: [{
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    suspension_reason: { type: String },
+    suspension_date: { type: Date, default: Date.now }
+  }],
+  actions: [{
+    action_type: { type: String },  // e.g., 'verify_worker', 'suspend_user', 'cancel_job'
+    target_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },  // Reference to the target (user, job, etc.)
+    description: { type: String },  // Short description of the action
+    action_date: { type: Date, default: Date.now }
+  }]
+});
 
-// Main User Schema
-const UserSchema = new Schema({
-  username: String,
-  password: { type: String },
-  email: String,
+const UserSchema = new mongoose.Schema({
+  full_name: { type: String, required: true },
+  password: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   phone_number: { type: String, default: '' },
-  address: String,
-  full_name: String,
-  role: { type: String, enum: ['client', 'worker', 'admin'], required: true },
-  client_profile: ClientProfileSchema,
-  worker_profile: WorkerProfileSchema,
-  admin_profile: AdminProfileSchema,
-  balance: { type: Number, default: 0 },
+  role: { type: String, enum: ['client', 'worker', 'admin'], required: true },  // Role determines if the user is a client, worker, or admin
+  client_profile: ClientProfileSchema,  // Included if the user is a client
+  worker_profile: WorkerProfileSchema,  // Included if the user is a worker
+  admin_profile: AdminProfileSchema,  // For admins
   created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now },
-})
+  updated_at: { type: Date, default: Date.now }
+});
 
-module.exports = mongoose.model('User', UserSchema)
+
+module.exports = mongoose.model('User', UserSchema);

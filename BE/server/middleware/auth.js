@@ -8,11 +8,11 @@ const authenticateJWT = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];  // Tách phần "Bearer" khỏi token
-    jwt.verify(token, secretKey, (err, result) => {
+    jwt.verify(token, secretKey, (err, user) => {
         if (err) {
             return res.status(403).json({ message: 'Forbidden, token invalid' });
         }
-        req.user = result.user;
+        req.user = user;
         next();
     });
 };

@@ -8,7 +8,7 @@ const JobSchema = new Schema({
   address: { type: String, required: true },  // Địa chỉ làm việc
   duration_hours: { type: Number, required: true },  // Thời lượng công việc (giờ)
   scheduled_time: { type: Date, required: true },  // Thời gian dự kiến
-  status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'completed', 'canceled'], default: 'pending' },  // Trạng thái công việc
+  status: { type: String, enum: ['pending', 'accepted', 'in_progress', 'completed', 'canceled'], default: 'pending' },  // Trạng thái công việc
   price: { type: Number, required: true },  // Giá dịch vụ
   payment_status: { type: String, enum: ['unpaid', 'paid', 'failed'], default: 'unpaid' },  // Trạng thái thanh toán
   created_at: { type: Date, default: Date.now },  // Thời gian tạo

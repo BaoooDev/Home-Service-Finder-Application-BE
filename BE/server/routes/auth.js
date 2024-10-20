@@ -3,6 +3,7 @@ const router = express.Router()
 const authenticateJWT = require('../middleware/auth')
 const cookieParser = require('cookie-parser')
 const app = express()
+const otpController = require("../controllers/otpController");
 
 app.use(express.json())
 app.use(cookieParser())
@@ -14,6 +15,12 @@ const { login, registerClient, registerWorker, getMe,loginClient, loginWorker,
 const { createJob, queryJobsForWorker, queryJobHistories,getJobs,cancelJob } = require('../controllers/jobController')
 const { createNoti, queryNoties } = require('../controllers/notiController')
 
+
+
+//Authen
+router.post("/users/send-otp", otpController.sendOTP);
+router.post("/users/verify", otpController.verifyOTP);
+
 router.post('/users/registerClient', registerClient)
 router.post('/users/registerWorker', registerWorker)
 
@@ -24,10 +31,6 @@ router.post('/login/client', loginClient);
 router.post('/login/worker', loginWorker);
 
 
-router.get('/client/addresses', authenticateJWT, getAddresses);
-router.post('/client/add-address',authenticateJWT, addAddress);
-router.put('/client/edit-address',authenticateJWT, editAddress);
-router.delete('/client/delete-address',authenticateJWT, deleteAddress);
 
 // Job
 router.get('/worker_jobs', authenticateJWT, queryJobsForWorker)
@@ -40,5 +43,9 @@ router.get('/notification', authenticateJWT, queryNoties)
 router.post('/notification', authenticateJWT, createNoti)
 
 //Adress
+router.get('/client/addresses', authenticateJWT, getAddresses);
+router.post('/client/add-address',authenticateJWT, addAddress);
+router.put('/client/edit-address',authenticateJWT, editAddress);
+router.delete('/client/delete-address',authenticateJWT, deleteAddress);
 
 module.exports = router

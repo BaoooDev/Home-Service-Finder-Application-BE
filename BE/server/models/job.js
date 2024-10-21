@@ -12,7 +12,10 @@ const JobSchema = new Schema({
   price: { type: Number, required: true },  // Giá dịch vụ
   payment_status: { type: String, enum: ['unpaid', 'paid', 'failed'], default: 'unpaid' },  // Trạng thái thanh toán
   created_at: { type: Date, default: Date.now },  // Thời gian tạo
-  updated_at: { type: Date, default: Date.now }  // Thời gian cập nhật
+  updated_at: { type: Date, default: Date.now },  // Thời gian cập nhật
+  rating: { type: Number }, // Đánh giá
+  confirmation_time: { type: Date }, // Giờ xác nhận
+  completion_time: { type: Date }, // Giờ hoàn thành
 });
 
 module.exports = mongoose.model('Job', JobSchema);

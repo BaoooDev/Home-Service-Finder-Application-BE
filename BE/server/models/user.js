@@ -20,14 +20,6 @@ const WorkerProfileSchema = new mongoose.Schema({
   identity_number: { type: String, required: true },  // Worker’s identity number
   certifications: { type: String },  // Certifications for the worker (optional)
   is_verified: { type: Boolean, default: false },  // Whether the worker is verified by an admin
-  rating: { type: Number, default: 0 },  // Worker’s overall rating
-  jobs_completed: { type: Number, default: 0 },  // Total jobs completed by the worker
-  assigned_jobs: [{ 
-    job_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },  // Jobs assigned to the worker
-    status: { type: String, enum: ['in_progress', 'completed'] },  // Job status for the worker
-    accepted_time: { type: Date },  // When the worker accepted the job
-    completion_time: { type: Date },  // When the job was completed
-  }]
 });
 
 const AdminProfileSchema = new mongoose.Schema({
@@ -62,6 +54,7 @@ const UserSchema = new mongoose.Schema({
   client_profile: ClientProfileSchema,  // Included if the user is a client
   worker_profile: WorkerProfileSchema,  // Included if the user is a worker
   admin_profile: AdminProfileSchema,  // For admins
+  balance: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 });

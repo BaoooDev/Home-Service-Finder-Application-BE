@@ -10,7 +10,7 @@ const AddressSchema = new mongoose.Schema({
 const ClientProfileSchema = new mongoose.Schema({
   jobs: [{
     job_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },  // Reference to jobs created by the client
-    status: { type: String, enum: ['pending', 'confirmed', 'in_progress', 'completed', 'canceled'] },
+    status: { type: String, enum: ['pending', 'accepted', 'in_progress', 'completed', 'canceled'] },
   }],
   addresses: [AddressSchema],  // List of addresses for the client
 });

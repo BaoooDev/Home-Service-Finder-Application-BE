@@ -12,7 +12,7 @@ const authenticateJWT = (req, res, next) => {
         if (err) {
             return res.status(403).json({ message: 'Forbidden, token invalid' });
         }
-        req.user = result.user;
+        req.user = result.user|| result;
         next();
     });
 };

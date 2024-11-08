@@ -144,18 +144,18 @@ const cancelJob = async (req, res) => {
 
 const queryJobsForWorker = async (req, res) => {
   const { status } = req.query
-
   const query = {}
-
   if (status) {
     if (status === 'pending') {
       query.worker_id = { $exists: false }
     }
     query.status = status
   } else {
-    query.status = { $nin: ['pending', 'canceled'] }
+    const user = await User.findById(req.user.id).populate('worker_profile')
+    query.worker_id = user._id
+    query.status = { $in: ['accepted', 'in_progress', 'completed'] }
   }
-
+  
   const jobs = await Job.find(query)
 
   return res.status(200).json({

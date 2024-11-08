@@ -44,9 +44,9 @@ router.get('/me', authenticateJWT, getMe)
 router.get('/worker_jobs', authenticateJWT, queryJobsForWorker)
 router.get('/jobs/history', authenticateJWT, queryJobHistories)
 router.post('/jobs/create', authenticateJWT, createJob)
-router.post('/jobs/receive', authenticateJWT, receiveJobFromWorker)
 router.get('/jobs', authenticateJWT, getJobs)
 router.get('/jobs/:id', authenticateJWT, getJobById)
+router.post('/jobs/:id/receive', authenticateJWT, receiveJobFromWorker)
 router.delete('/jobs/:job_id/cancel', authenticateJWT, cancelJob)
 
 // Notification

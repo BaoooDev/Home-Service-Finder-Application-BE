@@ -117,7 +117,7 @@ const registerWorker = async (req, res) => {
     // Tạo một user mới và lưu vào cơ sở dữ liệu
     let user = new User({
       password,
-      email,
+      email: email.toLowerCase(),
       full_name,
       address,
       role: 'worker',
@@ -148,39 +148,64 @@ const registerWorker = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
-// Đăng nhập Client
-const login = async (req, res) => {
+const loginClient = async (req, res) => {
   const { email, password } = req.body
 
   try {
     // Tìm người dùng với email và role là client
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email, role: 'client' })
     if (!user) {
-      return res.status(400).json({ msg: 'Invalid credentials or not a client' })
+      return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
 
     // So sánh mật khẩu
-    const isMatch = bcrypt.compare(password, user.password)
+    const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Invalid credentials' })
+      return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
 
     // Tạo JWT
-    if (user.role === 'client') {
-      const token = createToken(user)
+    const token = createToken(user)
 
-      // Gửi phản hồi với token
-      res.json({ token })
-    } else {
-      const payload = {
-        user: {
-          id: user._id,
-          role: user.role,
-        },
-      }
-      const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '1h' })
-      res.json({ token })
+    // Gửi phản hồi với token
+    res.json({ token })
+  } catch (error) {
+    console.error(error.message)
+    res.status(500).send('Server error')
+  }
+}
+
+// Đăng nhập Worker
+const loginWorker = async (req, res) => {
+  const { email, password } = req.body
+
+  try {
+    // Tìm người dùng với email
+    const user = await User.findOne({ email: email.toLowerCase(), role: 'worker' })
+    if (!user) {
+      return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
+
+    // So sánh mật khẩu
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
+    }
+
+    if (!user.worker_profile.is_verified) {
+      return res.status(400).json({ msg: 'Tài khoản chưa được xác minh vui lòng liên hệ admin để xử lý' })
+    }
+
+    // Tạo JWT
+    const payload = {
+      user: {
+        id: user._id,
+        role: user.role,
+      },
+    }
+    const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '1h' })
+
+    res.json({ token })
   } catch (error) {
     console.error(error.message)
     res.status(500).send('Server error')
@@ -373,7 +398,8 @@ const getAddresses = async (req, res) => {
 module.exports = {
   registerClient,
   registerWorker,
-  login,
+  loginClient,
+  loginWorker,
   getMe,
   addAddress,
   editAddress,

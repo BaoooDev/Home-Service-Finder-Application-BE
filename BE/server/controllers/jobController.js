@@ -21,7 +21,7 @@ const createJob = async (req, res) => {
 
     // Tạo công việc mới
     const newJob = new Job({
-      client_id: client._id,
+      client,
       service_type,
       address,
       duration_hours,
@@ -147,16 +147,18 @@ const queryJobsForWorker = async (req, res) => {
   const query = {}
   if (status) {
     if (status === 'pending') {
-      query.worker_id = { $exists: false }
+      query.worker = { $exists: false }
     }
     query.status = status
   } else {
-    const user = await User.findById(req.user.id).populate('worker_profile')
-    query.worker_id = user._id
+    const user = await User.findById(req.user.id)
     query.status = { $in: ['accepted', 'in_progress', 'completed'] }
+    query.worker = user._id
   }
-  
+
   const jobs = await Job.find(query)
+    .populate('client')
+    .populate('worker')
 
   return res.status(200).json({
     results: jobs,
@@ -204,7 +206,7 @@ const receiveJobFromWorker = async (req, res) => {
   }
 
   // Update the job with the worker's ID and change status to 'accepted'
-  job.worker_id = req.user.id
+  job.worker = req.user.id
   job.status = 'accepted'
   job.confirmation_time = new Date()
 

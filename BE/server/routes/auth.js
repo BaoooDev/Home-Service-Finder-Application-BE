@@ -9,7 +9,8 @@ app.use(express.json())
 app.use(cookieParser())
 
 const {
-  login,
+  loginClient,
+  loginWorker,
   registerClient,
   registerWorker,
   getMe,
@@ -37,7 +38,8 @@ router.post('/users/registerClient', registerClient)
 router.post('/users/registerWorker', registerWorker)
 
 // Đăng nhập
-router.post('/login', login)
+router.post('/login/client', loginClient)
+router.post('/login/worker', loginWorker)
 router.get('/me', authenticateJWT, getMe)
 
 // Job

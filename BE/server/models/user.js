@@ -17,8 +17,7 @@ const ClientProfileSchema = new mongoose.Schema({
 
 // Worker Profile Schema
 const WorkerProfileSchema = new mongoose.Schema({
-  identity_number: { type: String, required: true },  // Worker’s identity number
-  certifications: { type: String },  // Certifications for the worker (optional)
+  rating: { type: Number, default: 5 },
   is_verified: { type: Boolean, default: false },  // Whether the worker is verified by an admin
 });
 

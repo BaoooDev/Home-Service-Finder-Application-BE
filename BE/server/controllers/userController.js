@@ -250,23 +250,23 @@ const getMe = async (req, res) => {
   })
 
   // Calculate the total income from the completed jobs
-  const totalIncome = completedJobs.reduce((acc, job) => acc + job.price, 0)
+  const total_income = completedJobs.reduce((acc, job) => acc + job.price, 0)
 
   // Filter jobs that have ratings
-  const ratedJobs = completedJobs.filter((job) => job.rating !== undefined && job.rating !== null)
+  const rated_jobs = completedJobs.filter((job) => job.rating !== undefined && job.rating !== null)
 
   // Calculate total rating and average rating
-  const totalRating = ratedJobs.reduce((acc, job) => acc + job.rating, 0)
-  const averageRating = ratedJobs.length > 0 ? totalRating / ratedJobs.length : 0
+  const total_rating = rated_jobs.reduce((acc, job) => acc + job.rating, 0)
+  const average_rating = rated_jobs.length > 0 ? total_rating / rated_jobs.length : 0
 
   // Return the total income and number of completed jobs
   return res.status(200).json({
     user,
-    totalIncome,
-    workDone: completedJobs.length,
-    totalRating,
-    averageRating,
-    ratedJobs: ratedJobs.length, // Number of jobs that have a rating
+    total_income,
+    work_done: completedJobs.length,
+    total_rating,
+    average_rating,
+    ratedJobs: rated_jobs.length, // Number of jobs that have a rating
   })
 }
 

@@ -20,7 +20,7 @@ const createJob = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Client không hợp lệ' })
     }
 
-    const serviceModel = await Service.findById(service_id);
+    const serviceModel = await Service.findById(service_id)
     if (!serviceModel) {
       return res.status(400).json({ success: false, message: 'Dịch vụ không hợp lệ' })
     }
@@ -149,44 +149,41 @@ const cancelJob = async (req, res) => {
 }
 
 const queryJobsForWorker = async (req, res) => {
-  const { status } = req.query;
-  const query = {};
+  const { status } = req.query
+  const query = {}
 
   // Step 1: Retrieve the worker's information, including services
-  const user = await User.findById(req.user.id);
-  
+  const user = await User.findById(req.user.id)
+
   if (!user || user.role !== 'worker') {
-    return res.status(403).json({ message: 'Access denied. User is not a worker.' });
+    return res.status(403).json({ message: 'Access denied. User is not a worker.' })
   }
 
-  const workerServices = user.worker_profile.services;
+  const workerServices = user.worker_profile.services
 
   if (status) {
     // Step 2: Filter jobs based on status
     if (status === 'pending') {
-      query.worker = { $exists: false }; // Only get unassigned jobs if status is 'pending'
+      query.worker = { $exists: false } // Only get unassigned jobs if status is 'pending'
     }
-    query.status = status;
+    query.status = status
   } else {
-    query.status = { $in: ['accepted', 'in_progress', 'completed'] };
-    query.worker = user._id; // Only jobs assigned to this worker
+    query.status = { $in: ['accepted', 'in_progress', 'completed'] }
+    query.worker = user._id // Only jobs assigned to this worker
   }
 
   // Step 3: Filter jobs based on the services the worker offers
   if (workerServices && workerServices.length > 0) {
-    query.service = { $in: workerServices }; // Assuming 'service' field in Job schema references the service offered
+    query.service = { $in: workerServices } // Assuming 'service' field in Job schema references the service offered
   }
 
   // Step 4: Query jobs and populate client and worker information
-  const jobs = await Job.find(query)
-    .populate('client')
-    .populate('worker')
-    .populate('service');
+  const jobs = await Job.find(query).populate('client').populate('worker').populate('service')
 
   return res.status(200).json({
     results: jobs,
-  });
-};
+  })
+}
 
 const queryJobHistories = async (req, res) => {
   const { from, to } = req.query
@@ -206,12 +203,6 @@ const queryJobHistories = async (req, res) => {
   return res.status(200).json({
     results: jobs,
   })
-}
-
-const getJobById = async (req, res) => {
-  const job = await Job.findById(req.params.id)
-  if (!job) return res.status(404).json({ success: false, message: 'Job not found' })
-  return res.status(200).json(job)
 }
 
 const receiveJobFromWorker = async (req, res) => {
@@ -237,12 +228,38 @@ const receiveJobFromWorker = async (req, res) => {
   return res.status(200).json({ message: 'Job accepted successfully' })
 }
 
+const updateJob = async (req, res) => {
+  const { id } = req.params
+  const { status } = req.body
+  try {
+    const job = await Job.findById(id)
+
+    if (status === 'completed') {
+      job.completion_time = new Date()
+
+      // Need to update
+      const user = await User.findById(req.user.id)
+      user.balance += job.price
+      job.payment_status = 'paid'
+
+      await user.save()
+    }
+
+    job.status = status;
+    await job.save()
+    return res.status(200).json({ message: 'Job updated' })
+  } catch (error) {
+    console.error('Error updating job:', error)
+    throw error
+  }
+}
+
 module.exports = {
   createJob,
   getJobs,
   cancelJob,
   queryJobsForWorker,
   queryJobHistories,
-  getJobById,
+  updateJob,
   receiveJobFromWorker,
 }

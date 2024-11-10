@@ -187,18 +187,16 @@ const queryJobsForWorker = async (req, res) => {
 
 const queryJobHistories = async (req, res) => {
   const { from, to } = req.query
-
-  const user = await User.findById(req.user.id)
-  const query = { worker_id: user.worker_profile._id }
+  const query = { worker: req.user.id }
 
   if (from && to) {
     query.completion_time = {
-      $gte: moment(from).startOf('day').toDate(), // Jobs completed on or after the 'from' date
-      $lte: moment(to).endOf('day').toDate(), // Jobs completed on or before the 'to' date
+      $gte: moment(from).startOf('month').toDate(),
+      $lte: moment(to).endOf('month').toDate(),
     }
   }
 
-  const jobs = await Job.find(query)
+  const jobs = await Job.find(query).populate('client').populate('worker').populate('service')
 
   return res.status(200).json({
     results: jobs,
@@ -283,7 +281,8 @@ const getDashboardData = async (req, res) => {
     month_income: month_income[0]?.totalIncome || 0,
     ratings: rating_counts,
     good_jobs: worker_jobs.filter((job) => job.rating && job.rating >= 4).length,
-    average_jobs: worker_jobs.filter((job) => job.rating && job.rating >= 1 && job.rating < 4).length,
+    average_jobs: worker_jobs.filter((job) => job.rating && job.rating >= 1 && job.rating < 4)
+      .length,
   })
 }
 

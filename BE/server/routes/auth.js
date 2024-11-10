@@ -11,6 +11,8 @@ app.use(cookieParser())
 const {
   loginClient,
   loginWorker,
+  loginAdmin,
+  updateWorkerServices,
   registerClient,
   registerWorker,
   getMe,
@@ -29,6 +31,7 @@ const {
   receiveJobFromWorker,
 } = require('../controllers/jobController')
 const { createNoti, queryNoties } = require('../controllers/notiController')
+const { queryServices } = require('../controllers/serviceController')
 
 //Authen
 router.post('/users/send-otp', otpController.sendOTP)
@@ -36,10 +39,12 @@ router.post('/users/verify', otpController.verifyOTP)
 
 router.post('/users/registerClient', registerClient)
 router.post('/users/registerWorker', registerWorker)
+router.put('/users/worker', authenticateJWT, updateWorkerServices)
 
 // Đăng nhập
 router.post('/login/client', loginClient)
 router.post('/login/worker', loginWorker)
+router.post('/login', loginAdmin)
 router.get('/me', authenticateJWT, getMe)
 
 // Job
@@ -60,5 +65,8 @@ router.get('/client/addresses', authenticateJWT, getAddresses)
 router.post('/client/add-address', authenticateJWT, addAddress)
 router.put('/client/edit-address', authenticateJWT, editAddress)
 router.delete('/client/delete-address', authenticateJWT, deleteAddress)
+
+// Services
+router.get('/services', authenticateJWT, queryServices)
 
 module.exports = router

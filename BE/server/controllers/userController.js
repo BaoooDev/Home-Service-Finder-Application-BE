@@ -14,6 +14,7 @@ const createToken = (user) => {
   }
   return jwt.sign(payload, jwtkey, { expiresIn: '3d' })
 }
+
 const registerClient = async (req, res) => {
   try {
     // Lấy thông tin từ body
@@ -80,7 +81,7 @@ const registerClient = async (req, res) => {
 const registerWorker = async (req, res) => {
   try {
     // Lấy thông tin từ body
-    const { password, email, full_name, identity_number, address } = req.body
+    const { password, email, full_name, identity_number, address, services } = req.body
 
     // Kiểm tra các trường có được cung cấp hay không
     if (!password || !full_name || !identity_number || !email) {
@@ -148,6 +149,34 @@ const registerWorker = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
+
+const loginAdmin = async (req, res) => {
+  const { email, password } = req.body
+
+  try {
+    // Tìm người dùng với email và role là client
+    const user = await User.findOne({ email, role: 'admin' })
+    if (!user) {
+      return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
+    }
+
+    // So sánh mật khẩu
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
+    }
+
+    // Tạo JWT
+    const token = createToken(user)
+
+    // Gửi phản hồi với token
+    res.json({ token })
+  } catch (error) {
+    console.error(error.message)
+    res.status(500).send('Server error')
+  }
+}
+
 const loginClient = async (req, res) => {
   const { email, password } = req.body
 
@@ -193,17 +222,13 @@ const loginWorker = async (req, res) => {
     }
 
     if (!user.worker_profile.is_verified) {
-      return res.status(400).json({ msg: 'Tài khoản chưa được xác minh vui lòng liên hệ admin để xử lý' })
+      return res
+        .status(400)
+        .json({ msg: 'Tài khoản chưa được xác minh vui lòng liên hệ admin để xử lý' })
     }
 
     // Tạo JWT
-    const payload = {
-      user: {
-        id: user._id,
-        role: user.role,
-      },
-    }
-    const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '1h' })
+    const token = createToken(user)
 
     res.json({ token })
   } catch (error) {
@@ -395,12 +420,41 @@ const getAddresses = async (req, res) => {
   }
 }
 
+const updateWorkerServices = async (req, res) => {
+  const { services, address } = req.body
+  try {
+    await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $addToSet: {
+          'worker_profile.services': { $each: services },
+        },
+        $set: {
+          'worker_profile.address': address,
+        },
+      },
+      { new: true, runValidators: true }
+    )
+
+    res.status(200).json({ msg: 'Success' })
+  } catch (error) {
+    console.error('Error updating worker services:', error)
+    return {
+      success: false,
+      message: 'Failed to update worker services',
+      error: error.message,
+    }
+  }
+}
+
 module.exports = {
   registerClient,
   registerWorker,
   loginClient,
   loginWorker,
+  loginAdmin,
   getMe,
+  updateWorkerServices,
   addAddress,
   editAddress,
   deleteAddress,

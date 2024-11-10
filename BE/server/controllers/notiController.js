@@ -37,7 +37,7 @@ const createNoti = async (req, res) => {
 }
 
 const queryNoties = async (req, res) => {
-  const notis = await Notification.find()
+  const notis = await Notification.find().populate(['sender', 'receiver'])
   return res.status(200).json({
     results: notis,
   })

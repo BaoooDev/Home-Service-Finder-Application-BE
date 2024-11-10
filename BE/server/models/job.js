@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const JobSchema = new Schema({
   client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   worker: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },  // Sẽ được thêm khi worker nhận công việc
-  service_type: { type: String, required: true },  // Loại dịch vụ
+  service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },  // Loại dịch vụ
   address: { type: String, required: true },  // Địa chỉ làm việc
   duration_hours: { type: Number, required: true },  // Thời lượng công việc (giờ)
   scheduled_time: { type: Date, required: true },  // Thời gian dự kiến

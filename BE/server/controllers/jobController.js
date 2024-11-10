@@ -1,4 +1,5 @@
 const Job = require('../models/job')
+const Service = require('../models/service')
 const User = require('../models/user')
 const moment = require('moment')
 
@@ -6,10 +7,10 @@ const createJob = async (req, res) => {
   try {
     // Lấy client_id từ JWT token đã được xác thực
     const client_id = req.user.id
-    const { service_type, address, duration_hours, scheduled_time } = req.body
+    const { service_id, address, duration_hours, scheduled_time } = req.body
 
     // Kiểm tra các trường cần thiết có được cung cấp không
-    if (!service_type || !address || !duration_hours || !scheduled_time) {
+    if (!service_id || !address || !duration_hours || !scheduled_time) {
       return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin' })
     }
 
@@ -19,15 +20,20 @@ const createJob = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Client không hợp lệ' })
     }
 
+    const serviceModel = await Service.findById(service_id);
+    if (!serviceModel) {
+      return res.status(400).json({ success: false, message: 'Dịch vụ không hợp lệ' })
+    }
+
     // Tạo công việc mới
     const newJob = new Job({
       client,
-      service_type,
+      service: serviceModel,
       address,
       duration_hours,
       scheduled_time,
       status: 'pending',
-      price: calculatePrice(service_type, duration_hours), // Hàm tính giá tiền
+      price: calculatePrice(serviceModel.code, duration_hours), // Hàm tính giá tiền
       payment_status: 'unpaid',
     })
 
@@ -143,27 +149,44 @@ const cancelJob = async (req, res) => {
 }
 
 const queryJobsForWorker = async (req, res) => {
-  const { status } = req.query
-  const query = {}
-  if (status) {
-    if (status === 'pending') {
-      query.worker = { $exists: false }
-    }
-    query.status = status
-  } else {
-    const user = await User.findById(req.user.id)
-    query.status = { $in: ['accepted', 'in_progress', 'completed'] }
-    query.worker = user._id
+  const { status } = req.query;
+  const query = {};
+
+  // Step 1: Retrieve the worker's information, including services
+  const user = await User.findById(req.user.id);
+  
+  if (!user || user.role !== 'worker') {
+    return res.status(403).json({ message: 'Access denied. User is not a worker.' });
   }
 
+  const workerServices = user.worker_profile.services;
+
+  if (status) {
+    // Step 2: Filter jobs based on status
+    if (status === 'pending') {
+      query.worker = { $exists: false }; // Only get unassigned jobs if status is 'pending'
+    }
+    query.status = status;
+  } else {
+    query.status = { $in: ['accepted', 'in_progress', 'completed'] };
+    query.worker = user._id; // Only jobs assigned to this worker
+  }
+
+  // Step 3: Filter jobs based on the services the worker offers
+  if (workerServices && workerServices.length > 0) {
+    query.service = { $in: workerServices }; // Assuming 'service' field in Job schema references the service offered
+  }
+
+  // Step 4: Query jobs and populate client and worker information
   const jobs = await Job.find(query)
     .populate('client')
     .populate('worker')
+    .populate('service');
 
   return res.status(200).json({
     results: jobs,
-  })
-}
+  });
+};
 
 const queryJobHistories = async (req, res) => {
   const { from, to } = req.query

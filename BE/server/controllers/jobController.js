@@ -245,13 +245,46 @@ const updateJob = async (req, res) => {
       await user.save()
     }
 
-    job.status = status;
+    job.status = status
     await job.save()
     return res.status(200).json({ message: 'Job updated' })
   } catch (error) {
     console.error('Error updating job:', error)
     throw error
   }
+}
+
+const getDashboardData = async (req, res) => {
+  // Pre-filter jobs for the user
+  const worker_jobs = await Job.find({ worker: req.user.id })
+
+  const month_income = await Job.aggregate([
+    {
+      $match: {
+        completion_time: { $gte: moment().startOf('month').toDate() },
+        _id: { $in: worker_jobs.map((job) => job._id) },
+      },
+    }, // Filter by week and user jobs
+    { $group: { _id: null, totalIncome: { $sum: '$price' } } },
+  ])
+
+  const ratings = await Job.aggregate([
+    { $match: { rating: { $exists: true }, _id: { $in: worker_jobs.map((job) => job._id) } } },
+    { $group: { _id: '$rating', count: { $sum: 1 } } },
+  ])
+
+  const rating_counts = ratings.reduce((acc, rating) => {
+    acc[rating._id] = rating.count
+    return acc
+  }, {})
+
+  return res.status(200).json({
+    completed_jobs: worker_jobs.filter((job) => job.status === 'completed').length,
+    month_income: month_income[0]?.totalIncome || 0,
+    ratings: rating_counts,
+    good_jobs: worker_jobs.filter((job) => job.rating && job.rating >= 4).length,
+    average_jobs: worker_jobs.filter((job) => job.rating && job.rating >= 1 && job.rating < 4).length,
+  })
 }
 
 module.exports = {
@@ -262,4 +295,5 @@ module.exports = {
   queryJobHistories,
   updateJob,
   receiveJobFromWorker,
+  getDashboardData,
 }

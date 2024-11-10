@@ -266,7 +266,7 @@ const getMe = async (req, res) => {
     work_done: completedJobs.length,
     total_rating,
     average_rating,
-    ratedJobs: rated_jobs.length, // Number of jobs that have a rating
+    rated_jobs: rated_jobs.length, // Number of jobs that have a rating
   })
 }
 

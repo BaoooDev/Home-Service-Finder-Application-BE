@@ -30,6 +30,8 @@ const {
   updateJob,
   receiveJobFromWorker,
   getDashboardData,
+  getJobDetails,
+  rateJob
 } = require('../controllers/jobController')
 const { createNoti, queryNoties } = require('../controllers/notiController')
 const { queryServices } = require('../controllers/serviceController')
@@ -54,9 +56,13 @@ router.get('/jobs/history', authenticateJWT, queryJobHistories)
 router.get('/jobs/dashboard', authenticateJWT, getDashboardData)
 router.post('/jobs/create', authenticateJWT, createJob)
 router.get('/jobs', authenticateJWT, getJobs)
+router.get('/jobs/:jobId/details',authenticateJWT, getJobDetails);
+
 router.put('/jobs/:id', authenticateJWT, updateJob)
 router.post('/jobs/:id/receive', authenticateJWT, receiveJobFromWorker)
 router.delete('/jobs/:job_id/cancel', authenticateJWT, cancelJob)
+
+router.post('/jobs/:jobId/rate', authenticateJWT, rateJob);
 
 // Notification
 router.get('/notification', authenticateJWT, queryNoties)

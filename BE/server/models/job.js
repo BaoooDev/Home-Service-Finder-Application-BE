@@ -14,6 +14,7 @@ const JobSchema = new Schema({
   created_at: { type: Date, default: Date.now },  // Thời gian tạo
   updated_at: { type: Date, default: Date.now },  // Thời gian cập nhật
   rating: { type: Number }, // Đánh giá
+  service_comments: { type: String },
   confirmation_time: { type: Date }, // Giờ xác nhận
   completion_time: { type: Date }, // Giờ hoàn thành
 });

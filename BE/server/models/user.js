@@ -18,6 +18,13 @@ const ClientProfileSchema = new mongoose.Schema({
 // Worker Profile Schema
 const WorkerProfileSchema = new mongoose.Schema({
   rating: { type: Number, default: 5 },
+  reviews: [
+    {
+      job_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Job' },
+      rating: { type: Number },
+      comment: { type: String },
+    },
+  ],
   is_verified: { type: Boolean, default: false },  // Whether the worker is verified by an admin
   services: [{ type: Schema.Types.ObjectId, ref: 'Service' }],
   address: {type: String}

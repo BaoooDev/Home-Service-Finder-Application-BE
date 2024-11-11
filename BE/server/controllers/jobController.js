@@ -105,7 +105,7 @@ const getJobs = async (req, res) => {
 }
 const getJobDetails = async (req, res) => {
   try {
-    const { jobId } = req.params;
+    const { jobId } = req.params
 
     // Fetch the job and populate client, worker, and service fields
     const job = await Job.findById(jobId)
@@ -117,29 +117,29 @@ const getJobDetails = async (req, res) => {
         path: 'worker',
         select: 'full_name phone_number worker_profile', // Select fields from worker
       })
-      .populate('service'); // Populate service details if needed
+      .populate('service') // Populate service details if needed
 
     if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found' });
+      return res.status(404).json({ success: false, message: 'Job not found' })
     }
 
     // Find the client's address used for the job
-    let clientName = 'N/A';
-    let clientPhone = 'N/A';
-    
+    let clientName = 'N/A'
+    let clientPhone = 'N/A'
+
     if (job.client && job.client.client_profile && job.client.client_profile.addresses) {
       const clientAddress = job.client.client_profile.addresses.find(
         (addr) => addr.address === job.address // Match job address with client addresses
-      );
+      )
       if (clientAddress) {
-        clientName = clientAddress.name;
-        clientPhone = clientAddress.phone;
+        clientName = clientAddress.name
+        clientPhone = clientAddress.phone
       }
     }
 
     // Prepare the job details for response
     const jobDetails = {
-      _id:job._id,
+      _id: job._id,
       address: job.address,
       scheduled_time: job.scheduled_time,
       duration_hours: job.duration_hours,
@@ -150,24 +150,26 @@ const getJobDetails = async (req, res) => {
         name: clientName,
         phone: clientPhone,
       },
-      worker: job.worker ? {
-        name: job.worker.full_name,
-        phone: job.worker.phone_number,
-        rating: job.worker.worker_profile?.rating || 'N/A',
-      } : null,
+      worker: job.worker
+        ? {
+            name: job.worker.full_name,
+            phone: job.worker.phone_number,
+            rating: job.worker.worker_profile?.rating || 'N/A',
+          }
+        : null,
       service: job.service, // Include service details if needed
-    };
+    }
 
     // Return the job details
     res.status(200).json({
       success: true,
       job: jobDetails,
-    });
+    })
   } catch (error) {
-    console.error('Error fetching job details:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error fetching job details:', error)
+    res.status(500).json({ success: false, message: error.message })
   }
-};
+}
 const cancelJob = async (req, res) => {
   try {
     const { job_id } = req.params
@@ -242,7 +244,11 @@ const queryJobsForWorker = async (req, res) => {
   }
 
   // Step 4: Query jobs and populate client and worker information
-  const jobs = await Job.find(query).populate('client').populate('worker').populate('service')
+  const jobs = await Job.find(query)
+    .sort({ updatedAt: -1 })
+    .populate('client')
+    .populate('worker')
+    .populate('service')
 
   return res.status(200).json({
     results: jobs,
@@ -352,54 +358,54 @@ const getDashboardData = async (req, res) => {
 
 const rateJob = async (req, res) => {
   try {
-    const { jobId } = req.params;
-    const { workerRating, serviceRating, workerComment, serviceComment } = req.body;
+    const { jobId } = req.params
+    const { workerRating, serviceRating, workerComment, serviceComment } = req.body
 
     // Find the job and populate worker details
-    const job = await Job.findById(jobId).populate('worker');
+    const job = await Job.findById(jobId).populate('worker')
 
     if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found' });
+      return res.status(404).json({ success: false, message: 'Job not found' })
     }
 
     // Ensure job status is 'completed' before allowing rating
     if (job.status !== 'completed') {
-      return res.status(400).json({ success: false, message: 'Job must be completed to rate' });
+      return res.status(400).json({ success: false, message: 'Job must be completed to rate' })
     }
 
     // Update job with service rating and comments
-    job.rating = serviceRating;
-    job.service_comments = serviceComment;
-    await job.save();
+    job.rating = serviceRating
+    job.service_comments = serviceComment
+    await job.save()
 
     // Update worker's rating
     if (job.worker) {
-      const worker = await User.findById(job.worker._id);
-      const workerProfile = worker.worker_profile;
+      const worker = await User.findById(job.worker._id)
+      const workerProfile = worker.worker_profile
 
       // Calculate new average rating
       if (workerProfile) {
-        const existingRating = workerProfile.rating || 5;
-        workerProfile.rating = (existingRating + workerRating) / 2; // Update rating as average
+        const existingRating = workerProfile.rating || 5
+        workerProfile.rating = (existingRating + workerRating) / 2 // Update rating as average
 
         // Add worker comments to profile if needed (optional)
-        workerProfile.reviews = workerProfile.reviews || [];
+        workerProfile.reviews = workerProfile.reviews || []
         workerProfile.reviews.push({
           job_id: jobId,
           rating: workerRating,
           comment: workerComment,
-        });
+        })
 
-        await worker.save();
+        await worker.save()
       }
     }
 
-    res.status(200).json({ success: true, message: 'Rating submitted successfully' });
+    res.status(200).json({ success: true, message: 'Rating submitted successfully' })
   } catch (error) {
-    console.error('Error submitting rating:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error submitting rating:', error)
+    res.status(500).json({ success: false, message: error.message })
   }
-};
+}
 module.exports = {
   createJob,
   getJobs,
@@ -410,5 +416,5 @@ module.exports = {
   receiveJobFromWorker,
   getDashboardData,
   getJobDetails,
-  rateJob
+  rateJob,
 }

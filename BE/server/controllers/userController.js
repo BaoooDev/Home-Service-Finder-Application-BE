@@ -221,11 +221,11 @@ const loginWorker = async (req, res) => {
       return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
 
-    if (!user.worker_profile.is_verified) {
-      return res
-        .status(400)
-        .json({ msg: 'Tài khoản chưa được xác minh vui lòng liên hệ admin để xử lý' })
-    }
+    // if (!user.worker_profile.is_verified) {
+    //   return res
+    //     .status(400)
+    //     .json({ msg: 'Tài khoản chưa được xác minh vui lòng liên hệ admin để xử lý' })
+    // }
 
     // Tạo JWT
     const token = createToken(user)
@@ -238,8 +238,6 @@ const loginWorker = async (req, res) => {
 }
 
 const getMe = async (req, res) => {
-  const user = await User.findById(req.user.id).select('-password')
-
   const startOfWeek = moment().startOf('week').toDate()
   const endOfWeek = moment().endOf('week').toDate()
 
@@ -247,6 +245,7 @@ const getMe = async (req, res) => {
     status: 'completed',
     completion_time: { $gte: startOfWeek, $lte: endOfWeek },
     payment_status: 'paid',
+    worker: req.user.id
   })
 
   // Calculate the total income from the completed jobs
@@ -261,7 +260,6 @@ const getMe = async (req, res) => {
 
   // Return the total income and number of completed jobs
   return res.status(200).json({
-    user,
     total_income,
     work_done: completedJobs.length,
     total_rating,

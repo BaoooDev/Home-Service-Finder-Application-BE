@@ -238,6 +238,11 @@ const loginWorker = async (req, res) => {
 }
 
 const getMe = async (req, res) => {
+  const user = await User.findById(req.user.id).select('-password')
+  if (!user) {
+    return res.status(400).json({ msg: 'Vui lòng đăng nhập' })
+  }
+
   const startOfWeek = moment().startOf('week').toDate()
   const endOfWeek = moment().endOf('week').toDate()
 
@@ -245,7 +250,7 @@ const getMe = async (req, res) => {
     status: 'completed',
     completion_time: { $gte: startOfWeek, $lte: endOfWeek },
     payment_status: 'paid',
-    worker: req.user.id
+    worker: user.id
   })
 
   // Calculate the total income from the completed jobs
@@ -260,6 +265,7 @@ const getMe = async (req, res) => {
 
   // Return the total income and number of completed jobs
   return res.status(200).json({
+    user,
     total_income,
     work_done: completedJobs.length,
     total_rating,

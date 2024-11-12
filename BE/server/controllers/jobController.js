@@ -245,7 +245,7 @@ const queryJobsForWorker = async (req, res) => {
 
   // Step 4: Query jobs and populate client and worker information
   const jobs = await Job.find(query)
-    .sort({ updated_at: -1 })
+    .sort({ updatedAt: -1 })
     .populate('client')
     .populate('worker')
     .populate('service')

@@ -10,8 +10,8 @@ const NotiSchema = new Schema({
     enum: ['client', 'worker', 'system'],
     required: true,
   },
-  created_at: { type: Date, default: Date.now }, // Thời gian tạo
-  updated_at: { type: Date, default: Date.now }, // Thời gian cập nhật
+}, {
+  timestamps: true
 })
 
 module.exports = mongoose.model('Notification', NotiSchema)

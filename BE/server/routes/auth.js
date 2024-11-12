@@ -34,7 +34,7 @@ const {
   rateJob
 } = require('../controllers/jobController')
 const { createNoti, queryNoties } = require('../controllers/notiController')
-const { queryServices } = require('../controllers/serviceController')
+const { queryServices,getServiceDetails } = require('../controllers/serviceController')
 
 //Authen
 router.post('/users/send-otp', otpController.sendOTP)
@@ -76,5 +76,6 @@ router.delete('/client/delete-address', authenticateJWT, deleteAddress)
 
 // Services
 router.get('/services', authenticateJWT, queryServices)
+router.get('/services/:serviceType', getServiceDetails);
 
 module.exports = router

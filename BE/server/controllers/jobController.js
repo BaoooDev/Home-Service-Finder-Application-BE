@@ -5,27 +5,28 @@ const moment = require('moment')
 
 const createJob = async (req, res) => {
   try {
-    // Lấy client_id từ JWT token đã được xác thực
-    const client_id = req.user.id
-    const { service_id, address, duration_hours, scheduled_time } = req.body
+    // Retrieve client_id from authenticated JWT token
+    const client_id = req.user.id;
+    const { service_id, address, duration_hours, scheduled_time, price } = req.body; // Now receiving price from the frontend
 
-    // Kiểm tra các trường cần thiết có được cung cấp không
-    if (!service_id || !address || !duration_hours || !scheduled_time) {
-      return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin' })
+    // Validate required fields
+    if (!service_id || !address || !duration_hours || !scheduled_time || price == null) {
+      return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin' });
     }
 
-    // Kiểm tra xem client có tồn tại không
-    const client = await User.findById(client_id)
+    // Verify client existence and role
+    const client = await User.findById(client_id);
     if (!client || client.role !== 'client') {
-      return res.status(400).json({ success: false, message: 'Client không hợp lệ' })
+      return res.status(400).json({ success: false, message: 'Client không hợp lệ' });
     }
 
-    const serviceModel = await Service.findById(service_id)
+    // Fetch the selected service details
+    const serviceModel = await Service.findById(service_id);
     if (!serviceModel) {
-      return res.status(400).json({ success: false, message: 'Dịch vụ không hợp lệ' })
+      return res.status(400).json({ success: false, message: 'Dịch vụ không hợp lệ' });
     }
 
-    // Tạo công việc mới
+    // Create a new job using the price provided by the frontend
     const newJob = new Job({
       client,
       service: serviceModel,
@@ -33,55 +34,35 @@ const createJob = async (req, res) => {
       duration_hours,
       scheduled_time,
       status: 'pending',
-      price: calculatePrice(serviceModel.code, duration_hours), // Hàm tính giá tiền
+      price: price, // Use the price provided from the frontend
       payment_status: 'unpaid',
-    })
+    });
 
-    // Lưu công việc vào cơ sở dữ liệu
-    await newJob.save()
+    // Save the job to the database
+    await newJob.save();
 
-    // Đẩy jobId và status vào jobs của client trong client_profile
+    // Add jobId and status to client's job list in client_profile
     client.client_profile.jobs.push({
       job_id: newJob._id,
-      status: 'pending', // Đặt trạng thái công việc khi mới tạo
-    })
+      status: 'pending', // Set the initial status as pending
+    });
 
-    // Lưu lại client với thông tin công việc mới
-    await client.save()
+    // Save the client with the updated job list
+    await client.save();
 
-    // Phản hồi với thông tin công việc vừa tạo
+    // Respond with the newly created job details
     res.status(200).json({
       success: true,
       message: 'Đã đăng công việc thành công',
       job: newJob,
-      client_jobs: client.client_profile.jobs, // Phản hồi danh sách công việc của client
-    })
+      client_jobs: client.client_profile.jobs, // Respond with the client's job list
+    });
   } catch (error) {
-    console.log(error)
-    res.status(500).json({ success: false, message: error.message })
+    console.log(error);
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
-const calculatePrice = (service_type, duration_hours) => {
-  let basePrice = 0
-
-  switch (service_type) {
-    case 'cleaning':
-      basePrice = 100000 // Giá cơ bản cho dịch vụ dọn dẹp
-      break
-    case 'deep_cleaning':
-      basePrice = 150000 // Giá cơ bản cho dịch vụ tổng vệ sinh
-      break
-    case 'ac_cleaning':
-      basePrice = 200000 // Giá cơ bản cho dịch vụ vệ sinh máy lạnh
-      break
-    default:
-      basePrice = 100000 // Giá mặc định nếu không xác định loại dịch vụ
-      break
-  }
-
-  return basePrice * duration_hours // Tính giá dựa trên thời lượng làm việc
-}
 // Get list of jobs for the authenticated client
 const getJobs = async (req, res) => {
   try {

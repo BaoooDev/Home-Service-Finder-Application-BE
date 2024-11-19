@@ -35,6 +35,10 @@ const {
 } = require('../controllers/jobController')
 const { createNoti, queryNoties } = require('../controllers/notiController')
 const { queryServices,getServiceDetails } = require('../controllers/serviceController')
+const { getPendingWorkers, reviewWorker,updateServicePrice,
+  getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
+  getMonthlyRevenue,getTopClients
+ } = require('../controllers/adminController')
 
 //Authen
 router.post('/users/send-otp', otpController.sendOTP)
@@ -78,4 +82,15 @@ router.delete('/client/delete-address', authenticateJWT, deleteAddress)
 router.get('/services', authenticateJWT, queryServices)
 router.get('/services/:serviceType', getServiceDetails);
 
+//Admin
+router.get('/pendingWorkers', authenticateJWT,getPendingWorkers);
+router.put('/reviewWorker/:id', authenticateJWT,reviewWorker);
+router.put('/service/:id', authenticateJWT, updateServicePrice);
+router.get('/stats/monthly-revenue', authenticateJWT, getMonthlyRevenue);
+router.get('/stats/total-revenue', authenticateJWT, getTotalRevenue);
+router.get('/stats/service-revenue', authenticateJWT, getServiceRevenue);
+router.get('/stats/most-booked-service', authenticateJWT, getMostBookedService);
+router.get('/stats/worker-rankings', authenticateJWT, getWorkerRankings);
+router.get('/workers/:workerId/reviews', authenticateJWT, getWorkerReviews);
+router.get('/stats/top-clients', authenticateJWT, getTopClients);
 module.exports = router

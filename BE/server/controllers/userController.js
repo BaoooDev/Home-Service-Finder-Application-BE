@@ -111,8 +111,9 @@ const registerWorker = async (req, res) => {
     // Khởi tạo profile cho worker
     const worker_profile = {
       identity_number,
-      is_verified: false, // Chưa được xác thực
-      status: 'pending', // Chờ duyệt
+      is_verified: 'pending',
+      address, // Chưa được xác thực
+      
     }
 
     // Tạo một user mới và lưu vào cơ sở dữ liệu
@@ -140,8 +141,7 @@ const registerWorker = async (req, res) => {
       _id: user._id,
       email,
       full_name,
-      identity_number,
-      address,
+      worker_profile,
       token, // JWT Token để client sử dụng cho các yêu cầu khác
     })
   } catch (error) {

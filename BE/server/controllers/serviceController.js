@@ -23,6 +23,7 @@ const getServiceDetails = async (req, res) => {
       price_per_hour: service.price_per_hour,
       name: service.name,
       description: service.description,
+      code:service.code,
     };
 
     // Include front_load and top_load if they exist

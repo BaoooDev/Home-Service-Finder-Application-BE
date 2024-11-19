@@ -22,6 +22,7 @@ const ClientProfileSchema = new mongoose.Schema({
 
 // Worker Profile Schema
 const WorkerProfileSchema = new mongoose.Schema({
+  identity_number:{ type: String },
   rating: { type: Number, default: 5 },
   reviews: [
     {
@@ -30,8 +31,11 @@ const WorkerProfileSchema = new mongoose.Schema({
       comment: { type: String },
     },
   ],
-  is_verified: { type: Boolean, default: false }, // Whether the worker is verified by an admin
-  services: [{ type: Schema.Types.ObjectId, ref: 'Service' }],
+ is_verified: { 
+    type: String, 
+    enum: ['pending', 'approved', 'rejected'], 
+    default: 'pending' 
+  },  services: [{ type: Schema.Types.ObjectId, ref: 'Service' }],
   address: { type: String },
 })
 

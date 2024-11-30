@@ -170,7 +170,7 @@ const loginAdmin = async (req, res) => {
     const token = createToken(user)
 
     // Gửi phản hồi với token
-    res.json({ token })
+    res.json({ token, user })
   } catch (error) {
     console.error(error.message)
     res.status(500).send('Server error')

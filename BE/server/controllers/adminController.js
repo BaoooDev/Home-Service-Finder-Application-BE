@@ -171,152 +171,158 @@ const getServiceRevenue = async (req, res) => {
   }
 }
 
-const getMostBookedService = async (req, res) => {
-  try {
-    const mostBookedService = await Job.aggregate([
-      {
-        $group: {
-          _id: '$service', // Nhóm theo dịch vụ
-          count: { $sum: 1 }, // Đếm số lượng job của từng dịch vụ
+  const getMostBookedService = async (req, res) => {
+    try {
+      const serviceCounts = await Job.aggregate([
+        {
+          $group: {
+            _id: '$service',
+            count: { $sum: 1 }
+          }
         },
-      },
-      {
-        $sort: { count: -1 }, // Sắp xếp theo số lượng giảm dần
-      },
-      {
-        $limit: 1, // Lấy dịch vụ được đặt nhiều nhất
-      },
-    ])
-
-    res.status(200).json({
-      success: true,
-      data: mostBookedService[0] || {},
-    })
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Lỗi khi tìm dịch vụ được đặt nhiều nhất', error })
-  }
-}
-
-const getWorkerRankings = async (req, res) => {
-  try {
-    const rankings = await Job.aggregate([
-      {
-        $group: {
-          _id: '$worker', // Nhóm các job theo worker
-          jobCount: { $sum: 1 }, // Đếm số lượng job của từng worker
+        {
+          $sort: { count: -1 }
         },
-      },
-      {
-        $sort: { jobCount: -1 }, // Sắp xếp theo số lượng job giảm dần
-      },
-      {
-        $lookup: {
-          from: 'users', // Bảng users để lấy thông tin nhân viên
-          localField: '_id',
-          foreignField: '_id',
-          as: 'workerDetails',
+        {
+          $lookup: {
+            from: 'services', // Tên bảng dịch vụ
+            localField: '_id',
+            foreignField: '_id',
+            as: 'serviceDetails'
+          }
         },
-      },
-      {
-        $unwind: '$workerDetails', // Trích xuất thông tin nhân viên từ mảng workerDetails
-      },
-      {
-        $project: {
-          _id: 0,
-          workerId: '$_id',
-          fullName: '$workerDetails.full_name',
-          email: '$workerDetails.email',
-          jobCount: 1,
+        {
+          $unwind: '$serviceDetails' 
         },
-      },
-    ])
-
-    res.status(200).json({
-      success: true,
-      data: rankings,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi xếp hạng nhân viên', error })
-  }
-}
-
-const getWorkerReviews = async (req, res) => {
-  try {
-    const { workerId } = req.params // ID của nhân viên
-
-    const worker = await User.findById(workerId).select('worker_profile.reviews')
-    if (!worker) {
-      return res.status(404).json({ success: false, message: 'Nhân viên không tồn tại' })
+        {
+          $project: {
+            _id: 0,
+            serviceId: '$_id',
+            serviceName: '$serviceDetails.name',
+            count: 1
+          }
+        }
+      ]);
+  
+      res.status(200).json({
+        success: true,
+        data: serviceCounts
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Lỗi khi đếm số lượng dịch vụ được đặt', error });
     }
-
-    res.status(200).json({
-      success: true,
-      data: worker.worker_profile.reviews,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi lấy đánh giá nhân viên', error })
-  }
-}
-
-const getTopClients = async (req, res) => {
-  try {
-    const topClients = await Job.aggregate([
-      {
-        $match: { payment_status: 'paid' },
-      },
-      {
-        $group: {
-          _id: '$client', // Nhóm theo khách hàng
-          totalSpent: { $sum: '$price' }, // Tổng số tiền khách đã chi
-          jobCount: { $sum: 1 }, // Số lượng công việc khách đã đặt
+  };
+  
+  
+  const getWorkerRankings = async (req, res) => {
+    try {
+      const rankings = await Job.aggregate([
+        {
+          $group: {
+            _id: '$worker', // Nhóm các job theo worker
+            jobCount: { $sum: 1 } // Đếm số lượng job của từng worker
+          }
         },
-      },
-      {
-        $sort: { totalSpent: -1 }, // Sắp xếp theo số tiền chi giảm dần
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'clientDetails',
+        {
+          $sort: { jobCount: -1 } // Sắp xếp theo số lượng job giảm dần
         },
-      },
-      {
-        $unwind: '$clientDetails',
-      },
-      {
-        $project: {
-          _id: 0,
-          clientId: '$_id',
-          fullName: '$clientDetails.full_name',
-          email: '$clientDetails.email',
-          totalSpent: 1,
-          jobCount: 1,
+        {
+          $lookup: {
+            from: 'users', // Bảng users để lấy thông tin nhân viên
+            localField: '_id',
+            foreignField: '_id',
+            as: 'workerDetails'
+          }
         },
-      },
-    ])
-
-    res.status(200).json({
-      success: true,
-      data: topClients,
-    })
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi lấy khách hàng hàng đầu', error })
-  }
-}
-
-module.exports = {
-  getPendingWorkers,
-  reviewWorker,
-  updateServicePrice,
-  getTotalRevenue,
-  getServiceRevenue,
-  getMostBookedService,
-  getWorkerRankings,
-  getWorkerReviews,
-  getMonthlyRevenue,
-  getTopClients,
-}
+        {
+          $unwind: '$workerDetails' // Trích xuất thông tin nhân viên từ mảng workerDetails
+        },
+        {
+          $project: {
+            _id: 0,
+            workerId: '$_id',
+            fullName: '$workerDetails.full_name',
+            email: '$workerDetails.email',
+            jobCount: 1
+          }
+        }
+      ]);
+  
+      res.status(200).json({
+        success: true,
+        data: rankings
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Lỗi khi xếp hạng nhân viên', error });
+    }
+  };
+  
+  const getWorkerReviews = async (req, res) => {
+    try {
+      const { workerId } = req.params; // ID của nhân viên
+  
+      const worker = await User.findById(workerId).select('worker_profile.reviews');
+      if (!worker) {
+        return res.status(404).json({ success: false, message: 'Nhân viên không tồn tại' });
+      }
+  
+      res.status(200).json({
+        success: true,
+        data: worker.worker_profile.reviews,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Lỗi khi lấy đánh giá nhân viên', error });
+    }
+  };
+  const getTopClients = async (req, res) => {
+    try {
+      const topClients = await Job.aggregate([
+        {
+          $match: { payment_status: 'paid' }
+        },
+        {
+          $group: {
+            _id: '$client', // Nhóm theo khách hàng
+            totalSpent: { $sum: '$price' }, // Tổng số tiền khách đã chi
+            jobCount: { $sum: 1 } // Số lượng công việc khách đã đặt
+          }
+        },
+        {
+          $sort: { totalSpent: -1 } // Sắp xếp theo số tiền chi giảm dần
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'clientDetails'
+          }
+        },
+        {
+          $unwind: '$clientDetails'
+        },
+        {
+          $project: {
+            _id: 0,
+            clientId: '$_id',
+            fullName: '$clientDetails.full_name',
+            email: '$clientDetails.email',
+            totalSpent: 1,
+            jobCount: 1
+          }
+        }
+      ]);
+  
+      res.status(200).json({
+        success: true,
+        data: topClients
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Lỗi khi lấy khách hàng hàng đầu', error });
+    }
+  };
+  
+  module.exports = { getPendingWorkers, reviewWorker,updateServicePrice,
+    getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
+    getMonthlyRevenue,getTopClients  };
+  

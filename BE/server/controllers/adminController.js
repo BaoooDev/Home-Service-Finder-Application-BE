@@ -141,22 +141,38 @@ const getTotalRevenue = async (req, res) => {
     res.status(500).json({ success: false, message: 'Lỗi khi tính tổng doanh thu', error })
   }
 }
-
 const getServiceRevenue = async (req, res) => {
   try {
     const serviceRevenue = await Job.aggregate([
       {
-        $match: { payment_status: 'paid' }, // Chỉ tính các job đã thanh toán
+        $match: { payment_status: 'paid' }, 
       },
       {
         $group: {
-          _id: '$service', // Nhóm theo dịch vụ
-          totalRevenue: { $sum: '$price' }, // Tổng doanh thu của từng dịch vụ
-          jobCount: { $sum: 1 }, // Số lượng job của từng dịch vụ
+          _id: '$service', 
+          totalRevenue: { $sum: '$price' }, 
         },
       },
       {
-        $sort: { totalRevenue: -1 }, // Sắp xếp theo tổng doanh thu giảm dần
+        $sort: { totalRevenue: -1 }, 
+      },
+      {
+        $lookup: {
+          from: 'services', 
+          localField: '_id', 
+          foreignField: '_id', 
+          as: 'serviceDetails', 
+        },
+      },
+      {
+        $unwind: '$serviceDetails', 
+      },
+      {
+        $project: {
+          _id: '$_id', 
+          name: '$serviceDetails.name', 
+          totalRevenue: 1, 
+        },
       },
     ])
 
@@ -165,9 +181,11 @@ const getServiceRevenue = async (req, res) => {
       data: serviceRevenue,
     })
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Lỗi khi tính tổng doanh thu theo dịch vụ', error })
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi tính tổng doanh thu theo dịch vụ',
+      error,
+    })
   }
 }
 

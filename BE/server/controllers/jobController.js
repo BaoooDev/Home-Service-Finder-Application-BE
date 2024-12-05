@@ -153,47 +153,55 @@ const getJobDetails = async (req, res) => {
 }
 const cancelJob = async (req, res) => {
   try {
-    const { job_id } = req.params
-    const userId = req.user.id
+    const { job_id } = req.params; // Extract job ID from request parameters
+    const userId = req.user.id; // Extract user ID from authenticated user
 
-    const job = await Job.findById(job_id)
+    // Find the job by its ID
+    const job = await Job.findById(job_id);
 
     if (!job) {
-      return res.status(404).json({ success: false, message: 'Job not found' })
+      return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
-    if (job.client.toString() !== userId && req.user.role !== 'admin') {
-      return res
-        .status(403)
-        .json({ success: false, message: 'You do not have permission to cancel this job' })
+    // Check if the user is authorized to cancel the job
+    const isAdmin = req.user.role === 'admin';
+    const isClient = job.client.toString() === userId;
+    if (!isAdmin && !isClient) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to cancel this job',
+      });
     }
 
-    const currentTime = new Date()
-    const scheduledTime = new Date(job.scheduled_time)
-    const timeDifference = scheduledTime - currentTime
-    const twelveHoursInMilliseconds = 12 * 60 * 60 * 1000
+    // Prevent cancellation within 12 hours of the scheduled time for non-admin users
+    const currentTime = new Date();
+    const scheduledTime = new Date(job.scheduled_time);
+    const timeDifference = scheduledTime - currentTime;
+    const twelveHoursInMilliseconds = 12 * 60 * 60 * 1000;
 
-    if (timeDifference <= twelveHoursInMilliseconds) {
+    if (timeDifference <= twelveHoursInMilliseconds && !isAdmin) {
       return res.status(400).json({
         success: false,
         message: 'Cannot cancel job within 12 hours of scheduled time',
-      })
+      });
     }
 
     // Update the job status to 'canceled'
-    job.status = 'canceled'
-    job.updated_at = new Date()
-    await job.save()
+    job.status = 'canceled';
+    job.updated_at = new Date();
+    await job.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'Job canceled successfully',
       job,
-    })
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
+    // Handle unexpected errors gracefully
+    return res.status(500).json({ success: false, message: error.message });
   }
-}
+};
+
 
 const queryJobsForWorker = async (req, res) => {
   const { status } = req.query

@@ -10,7 +10,7 @@ const getPendingWorkers = async (req, res) => {
     const pendingWorkers = await User.find({
       role: 'worker',
       'worker_profile.is_verified': 'pending', // Lọc chỉ các hồ sơ đang chờ xét duyệt
-    }).select('full_name email worker_profile.identity_number worker_profile.address') // Lấy các thông tin cần thiết
+    }).select('full_name phone_number email worker_profile.identity_number worker_profile.address') // Lấy các thông tin cần thiết
 
     res.status(200).json({ success: true, data: pendingWorkers })
   } catch (error) {
@@ -339,8 +339,117 @@ const getServiceRevenue = async (req, res) => {
       res.status(500).json({ success: false, message: 'Lỗi khi lấy khách hàng hàng đầu', error });
     }
   };
+  const getAllJobs = async (req, res) => {
+    try {
+      // Extract optional query parameters
+      const {
+        status,
+        payment_status,
+        worker,
+        client,
+        page = 1, // Default to the first page
+        limit = 10, // Default to 10 items per page
+        sortBy = 'createdAt', // Default sorting field
+        order = 'desc', // Default sorting order
+        service, // Service filter
+      } = req.query;
+  
+      // Build the dynamic filter object based on query params
+      const filter = {};
+      if (status) filter.status = status;
+      if (payment_status) filter.payment_status = payment_status;
+      if (worker) filter.worker = worker;
+      if (client) filter.client = client;
+      if (service) filter.service = service; // Add service filter
+  
+      // Pagination settings
+      const pageLimit = parseInt(limit, 10);
+      const skip = (parseInt(page, 10) - 1) * pageLimit;
+  
+      // Fetch jobs with filtering, pagination, and sorting
+      const jobs = await Job.find(filter)
+        .sort({ [sortBy]: order === 'desc' ? -1 : 1 }) // Sorting based on field and order
+        .skip(skip) // Pagination: skip items
+        .limit(pageLimit) // Pagination: limit items
+        .populate('worker', 'full_name email') // Populate worker details
+        .populate('client', 'full_name email') // Populate client details
+        .populate('service', 'name') // Populate service details
+        .select('-__v'); // Exclude `__v` field
+  
+      // Count total jobs matching the filter for pagination
+      const totalJobs = await Job.countDocuments(filter);
+  
+      // Return response with jobs and pagination info
+      res.status(200).json({
+        success: true,
+        data: jobs,
+        total: totalJobs,
+        currentPage: parseInt(page, 10),
+        totalPages: Math.ceil(totalJobs / pageLimit),
+      });
+    } catch (error) {
+      // Handle errors gracefully
+      res.status(500).json({ success: false, message: 'Error fetching jobs', error: error.message });
+    }
+  };
+  
+  const getAllWorkers = async (req, res) => {
+    try {
+      // Aggregate workers data
+      const workers = await Job.aggregate([
+        {
+          $group: {
+            _id: '$worker', // Group jobs by worker ID
+            jobCount: { $sum: 1 }, // Count total jobs per worker
+            averageRating: { $avg: '$rating' }, // Calculate average rating
+            totalEarnings: { $sum: '$price' }, // Sum up all job prices (earnings)
+          },
+        },
+        {
+          $lookup: {
+            from: 'users', // Lookup worker details from User collection
+            localField: '_id', // Match worker ID in Job collection
+            foreignField: '_id', // Match user ID in User collection
+            as: 'workerDetails',
+          },
+        },
+        {
+          $unwind: '$workerDetails', // Flatten worker details array
+        },
+        {
+          $project: {
+            _id: 0, // Exclude MongoDB _id
+            workerId: '$_id', // Include worker ID
+            fullName: '$workerDetails.full_name', // Worker name
+            email: '$workerDetails.email', // Worker email
+            phoneNumber: '$workerDetails.phone_number', // Worker phone
+            address: '$workerDetails.worker_profile.address', // Worker address
+            jobCount: 1, // Total number of jobs
+            averageRating: { $round: ['$workerDetails.worker_profile.rating', 2] }, // Average rating (rounded)
+            totalEarnings: 1, // Total earnings from jobs
+            isVerified: '$workerDetails.worker_profile.is_verified',
+            identity_number:'$workerDetails.worker_profile.identity_number', // Verification status
+          },
+        },
+        {
+          $sort: { jobCount: -1 }, // Sort by number of jobs (highest first)
+        },
+      ]);
+  
+      res.status(200).json({
+        success: true,
+        data: workers,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching worker data',
+        error: error.message,
+      });
+    }
+  };
   
   module.exports = { getPendingWorkers, reviewWorker,updateServicePrice,
     getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
-    getMonthlyRevenue,getTopClients  };
+    getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers  };
   

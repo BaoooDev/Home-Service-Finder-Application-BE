@@ -1,11 +1,22 @@
 const Service = require('../models/service')
 
 const queryServices = async (req, res) => {
-  const services = await Service.find()
-  return res.status(200).json({
-    results: services,
-  })
-}
+  try {
+    const services = await Service.find();
+    res.status(200).json({
+      success: true,
+      totalCount: services.length,
+      results: services,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching services',
+      error: error.message,
+    });
+  }
+};
+
 const getServiceDetails = async (req, res) => {
   try {
     const { serviceType } = req.params;

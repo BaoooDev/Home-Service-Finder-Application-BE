@@ -20,6 +20,7 @@ const {
   editAddress,
   deleteAddress,
   getAddresses,
+  getWorkerDetails
 } = require('../controllers/userController')
 const {
   createJob,
@@ -37,7 +38,7 @@ const { createNoti, queryNoties } = require('../controllers/notiController')
 const { queryServices,getServiceDetails } = require('../controllers/serviceController')
 const { getPendingWorkers, reviewWorker,updateServicePrice,
   getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
-  getMonthlyRevenue,getTopClients
+  getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers
  } = require('../controllers/adminController')
 
 //Authen
@@ -47,6 +48,7 @@ router.post('/users/verify', otpController.verifyOTP)
 router.post('/users/registerClient', registerClient)
 router.post('/users/registerWorker', registerWorker)
 router.put('/users/worker', authenticateJWT, updateWorkerServices)
+router.get('/worker', authenticateJWT, getWorkerDetails)
 
 // Đăng nhập
 router.post('/login/client', loginClient)
@@ -93,4 +95,7 @@ router.get('/stats/most-booked-service', authenticateJWT, getMostBookedService);
 router.get('/stats/worker-rankings', authenticateJWT, getWorkerRankings);
 router.get('/workers/:workerId/reviews', authenticateJWT, getWorkerReviews);
 router.get('/stats/top-clients', authenticateJWT, getTopClients);
+router.get('/stats/jobs', authenticateJWT, getAllJobs);
+router.get('/stats/workers', authenticateJWT, getAllWorkers);
+
 module.exports = router

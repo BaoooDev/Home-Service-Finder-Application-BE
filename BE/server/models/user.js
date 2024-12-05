@@ -81,6 +81,8 @@ const UserSchema = new mongoose.Schema(
     worker_profile: WorkerProfileSchema, // Included if the user is a worker
     admin_profile: AdminProfileSchema, // For admins
     balance: { type: Number, default: 0 },
+   escrow_balance: { type: Number, default: 0 },
+
   },
   {
     timestamps: true,

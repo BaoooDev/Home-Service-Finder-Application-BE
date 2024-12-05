@@ -81,7 +81,8 @@ const registerClient = async (req, res) => {
 const registerWorker = async (req, res) => {
   try {
     // Lấy thông tin từ body
-    const { password, email, full_name, identity_number, address, services } = req.body
+    const { password, email, full_name, identity_number,
+      phone_number, address, services } = req.body
 
     // Kiểm tra các trường có được cung cấp hay không
     if (!password || !full_name || !identity_number || !email) {
@@ -122,6 +123,7 @@ const registerWorker = async (req, res) => {
       email: email.toLowerCase(),
       full_name,
       address,
+      phone_number,
       role: 'worker',
       worker_profile, // Đính kèm profile của worker
     })
@@ -141,6 +143,7 @@ const registerWorker = async (req, res) => {
       _id: user._id,
       email,
       full_name,
+      phone_number,
       worker_profile,
       token, // JWT Token để client sử dụng cho các yêu cầu khác
     })
@@ -450,6 +453,34 @@ const updateWorkerServices = async (req, res) => {
     }
   }
 }
+const getWorkerDetails = async (req, res) => {
+  const userId = req.user.id;
+  console.log(`Fetching details for user ID: ${userId}`);
+
+  try {
+    const worker = await User.findById(userId).select('full_name email phone_number worker_profile');
+
+    if (!worker) {
+      console.log('User not found in the database.');
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    res.status(200).json({
+      id: worker._id,
+      name: worker.full_name,
+      email: worker.email,
+      phone: worker.phone_number,
+      isVerified: worker.worker_profile.is_verified,
+      identityNumber: worker.worker_profile.identity_number,
+      rating: worker.worker_profile.rating,
+      reviews: worker.worker_profile.reviews,
+      services: worker.worker_profile.services,
+      address: worker.worker_profile.address,
+    });
+  } catch (error) {
+    console.error('Error fetching worker details:', error.message);
+    res.status(500).json({ error: 'An error occurred while fetching worker details.' });
+  }
+};
 
 module.exports = {
   registerClient,
@@ -463,4 +494,5 @@ module.exports = {
   editAddress,
   deleteAddress,
   getAddresses,
+  getWorkerDetails
 }

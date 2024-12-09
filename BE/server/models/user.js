@@ -53,13 +53,7 @@ const AdminProfileSchema = new mongoose.Schema({
       rejection_date: { type: Date, default: Date.now },
     },
   ],
-  suspended_users: [
-    {
-      user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      suspension_reason: { type: String },
-      suspension_date: { type: Date, default: Date.now },
-    },
-  ],
+  
   actions: [
     {
       action_type: { type: String }, // e.g., 'verify_worker', 'suspend_user', 'cancel_job'
@@ -81,7 +75,6 @@ const UserSchema = new mongoose.Schema(
     worker_profile: WorkerProfileSchema, // Included if the user is a worker
     admin_profile: AdminProfileSchema, // For admins
     balance: { type: Number, default: 0 },
-   escrow_balance: { type: Number, default: 0 },
 
   },
   {

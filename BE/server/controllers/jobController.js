@@ -334,9 +334,14 @@ const getDashboardData = async (req, res) => {
     acc[rating._id] = rating.count
     return acc
   }, {})
-
+  const current_month_completed_jobs = worker_jobs.filter(
+    (job) =>
+      job.status === 'completed' &&
+      job.completion_time >= moment().startOf('month').toDate()
+  ).length;
   return res.status(200).json({
     completed_jobs: worker_jobs.filter((job) => job.status === 'completed').length,
+    current_month_completed_jobs,
     month_income: month_income[0]?.totalIncome || 0,
     ratings: rating_counts,
     good_jobs: worker_jobs.filter((job) => job.rating && job.rating >= 4).length,

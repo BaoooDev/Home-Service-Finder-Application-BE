@@ -6,17 +6,39 @@ const moment = require('moment')
 
 const getPendingWorkers = async (req, res) => {
   try {
-    // Tìm tất cả user có vai trò là 'worker' và trạng thái xét duyệt là 'pending'
-    const pendingWorkers = await User.find({
-      role: 'worker',
-      'worker_profile.is_verified': 'pending', // Lọc chỉ các hồ sơ đang chờ xét duyệt
-    }).select('full_name phone_number email worker_profile.identity_number worker_profile.address') // Lấy các thông tin cần thiết
+    const pendingWorkers = await User.aggregate([
+      {
+        $match: {
+          role: 'worker',
+          'worker_profile.is_verified': 'pending', // Lọc nhân viên đang chờ xét duyệt
+        },
+      },
+      {
+        $lookup: {
+          from: 'services', // Tên bảng dịch vụ (đảm bảo đúng tên trong MongoDB)
+          localField: 'worker_profile.services', // Liên kết danh sách service IDs
+          foreignField: '_id', // `_id` trong bảng Service
+          as: 'services', // Lưu kết quả vào `services`
+        },
+      },
+      {
+        $project: {
+          full_name: 1,
+          phone_number: 1,
+          email: 1,
+          'worker_profile.identity_number': 1,
+          'worker_profile.address': 1,
+          services: { $map: { input: '$services', as: 'service', in: '$$service.name' } }, // Lấy tên dịch vụ
+        },
+      },
+    ]);
 
-    res.status(200).json({ success: true, data: pendingWorkers })
+    res.status(200).json({ success: true, data: pendingWorkers });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
+
 
 const reviewWorker = async (req, res) => {
   try {
@@ -275,23 +297,6 @@ const getServiceRevenue = async (req, res) => {
     }
   };
   
-  const getWorkerReviews = async (req, res) => {
-    try {
-      const { workerId } = req.params; // ID của nhân viên
-  
-      const worker = await User.findById(workerId).select('worker_profile.reviews');
-      if (!worker) {
-        return res.status(404).json({ success: false, message: 'Nhân viên không tồn tại' });
-      }
-  
-      res.status(200).json({
-        success: true,
-        data: worker.worker_profile.reviews,
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Lỗi khi lấy đánh giá nhân viên', error });
-    }
-  };
   const getTopClients = async (req, res) => {
     try {
       const topClients = await Job.aggregate([
@@ -448,8 +453,58 @@ const getServiceRevenue = async (req, res) => {
       });
     }
   };
+  const getJobReviews = async (req, res) => {
+    try {
+      const jobReviews = await Job.find(
+        { rating: { $exists: true } } // Chỉ lấy các job có đánh giá
+      )
+        .populate('service', 'name') // Lấy tên dịch vụ liên quan
+        .select('service rating service_comments'); // Chỉ lấy các trường cần thiết
+  
+      res.status(200).json({
+        success: true,
+        data: jobReviews,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy đánh giá từ công việc',
+        error,
+      });
+    }
+  };
+  const getWorkerReviews = async (req, res) => {
+    try {
+      const workerReviews = await User.find(
+        { role: 'worker' } // Chỉ lấy nhân viên
+      )
+        .populate('worker_profile.reviews.job_id', 'service') // Liên kết với job để lấy dịch vụ liên quan
+        .select('full_name worker_profile.reviews'); // Chỉ lấy tên nhân viên và danh sách đánh giá
+  
+      const formattedReviews = workerReviews.map((worker) => ({
+        full_name: worker.full_name,
+        reviews: worker.worker_profile.reviews.map((review) => ({
+          job_id: review.job_id?._id,
+          service: review.job_id?.service,
+          rating: review.rating,
+          comment: review.comment,
+        })),
+      }));
+  
+      res.status(200).json({
+        success: true,
+        data: formattedReviews,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy đánh giá từ nhân viên',
+        error,
+      });
+    }
+  };
   
   module.exports = { getPendingWorkers, reviewWorker,updateServicePrice,
     getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
-    getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers  };
+    getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers,getJobReviews  };
   

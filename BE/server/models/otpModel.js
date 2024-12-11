@@ -29,7 +29,7 @@ async function sendVerificationEmail(email, otp) {
       email,
       "TBKEE Xin chào",
       `Vui lòng xác thực mã OTP của bạn
-       <p>Đây là mã otp của bạn: ${otp}</p>`
+       Đây là mã otp của bạn: ${otp}`
     );
     console.log("Email sent successfully: ", mailResponse);
   } catch (error) {

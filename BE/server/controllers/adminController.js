@@ -76,40 +76,45 @@ const reviewWorker = async (req, res) => {
 
 const updateServicePrice = async (req, res) => {
   try {
-    const { id } = req.params // ID của dịch vụ
-    const { base_price, price_per_hour, front_load, top_load } = req.body // Dữ liệu cập nhật
+    const { id } = req.params; // ID of the service
+    const { base_price, price_per_hour, front_load, top_load } = req.body; // Updated fields
 
-    // Tìm dịch vụ theo ID
-    const service = await Service.findById(id)
+    // Find the service by ID
+    const service = await Service.findById(id);
     if (!service) {
-      return res.status(404).json({ success: false, message: 'Dịch vụ không tồn tại' })
+      return res.status(404).json({ success: false, message: 'Dịch vụ không tồn tại' });
     }
 
-    // Kiểm tra các trường cần cập nhật tùy thuộc vào loại dịch vụ
-    if (service.code === 'cleaning' || service.code === 'cleaning_ac') {
-      if (base_price !== undefined) service.base_price = base_price
-      if (price_per_hour !== undefined) service.price_per_hour = price_per_hour
+    // Update fields based on service type
+    if (service.code === 'cleaning') {
+      if (base_price !== undefined) service.base_price = base_price;
+      if (price_per_hour !== undefined) service.price_per_hour = price_per_hour;
     } else if (service.code === 'cleaning_wash') {
-      if (front_load !== undefined) service.front_load = front_load
-      if (top_load !== undefined) service.top_load = top_load
+      if (front_load !== undefined) service.front_load = front_load;
+      if (top_load !== undefined) service.top_load = top_load;
+    } else if (service.code === 'cleaning_ac') {
+      if (base_price !== undefined) service.base_price = base_price;
+      if (price_per_hour !== undefined) service.price_per_hour = price_per_hour;
     } else {
       return res
         .status(400)
-        .json({ success: false, message: 'Loại dịch vụ không hỗ trợ cập nhật giá này' })
+        .json({ success: false, message: 'Loại dịch vụ không hỗ trợ cập nhật giá này' });
     }
 
-    // Lưu dịch vụ sau khi cập nhật
-    await service.save()
+    // Save the updated service
+    await service.save();
 
     res.status(200).json({
       success: true,
       message: 'Dịch vụ đã được cập nhật thành công',
       data: service,
-    })
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi khi cập nhật dịch vụ', error })
+    console.error('Error updating service price:', error);
+    res.status(500).json({ success: false, message: 'Lỗi khi cập nhật dịch vụ', error });
   }
-}
+};
+
 
 const getMonthlyRevenue = async (req, res) => {
   try {
@@ -305,13 +310,13 @@ const getServiceRevenue = async (req, res) => {
         },
         {
           $group: {
-            _id: '$client', // Nhóm theo khách hàng
-            totalSpent: { $sum: '$price' }, // Tổng số tiền khách đã chi
-            jobCount: { $sum: 1 } // Số lượng công việc khách đã đặt
+            _id: '$client', 
+            totalSpent: { $sum: '$price' }, 
+            jobCount: { $sum: 1 } 
           }
         },
         {
-          $sort: { totalSpent: -1 } // Sắp xếp theo số tiền chi giảm dần
+          $sort: { totalSpent: -1 } 
         },
         {
           $lookup: {
@@ -346,45 +351,39 @@ const getServiceRevenue = async (req, res) => {
   };
   const getAllJobs = async (req, res) => {
     try {
-      // Extract optional query parameters
       const {
         status,
         payment_status,
         worker,
         client,
-        page = 1, // Default to the first page
-        limit = 10, // Default to 10 items per page
-        sortBy = 'createdAt', // Default sorting field
-        order = 'desc', // Default sorting order
-        service, // Service filter
+        page = 1, 
+        limit = 10, 
+        sortBy = 'createdAt', 
+        order = 'desc', 
+        service, 
       } = req.query;
   
-      // Build the dynamic filter object based on query params
       const filter = {};
       if (status) filter.status = status;
       if (payment_status) filter.payment_status = payment_status;
       if (worker) filter.worker = worker;
       if (client) filter.client = client;
-      if (service) filter.service = service; // Add service filter
+      if (service) filter.service = service; 
   
-      // Pagination settings
       const pageLimit = parseInt(limit, 10);
       const skip = (parseInt(page, 10) - 1) * pageLimit;
   
-      // Fetch jobs with filtering, pagination, and sorting
       const jobs = await Job.find(filter)
-        .sort({ [sortBy]: order === 'desc' ? -1 : 1 }) // Sorting based on field and order
-        .skip(skip) // Pagination: skip items
-        .limit(pageLimit) // Pagination: limit items
-        .populate('worker', 'full_name email') // Populate worker details
-        .populate('client', 'full_name email') // Populate client details
-        .populate('service', 'name') // Populate service details
-        .select('-__v'); // Exclude `__v` field
+        .sort({ [sortBy]: order === 'desc' ? -1 : 1 }) 
+        .skip(skip) 
+        .limit(pageLimit) 
+        .populate('worker', 'full_name email') 
+        .populate('client', 'full_name email') 
+        .populate('service', 'name') 
+        .select('-__v'); 
   
-      // Count total jobs matching the filter for pagination
       const totalJobs = await Job.countDocuments(filter);
   
-      // Return response with jobs and pagination info
       res.status(200).json({
         success: true,
         data: jobs,
@@ -400,44 +399,43 @@ const getServiceRevenue = async (req, res) => {
   
   const getAllWorkers = async (req, res) => {
     try {
-      // Aggregate workers data
       const workers = await Job.aggregate([
         {
           $group: {
-            _id: '$worker', // Group jobs by worker ID
-            jobCount: { $sum: 1 }, // Count total jobs per worker
-            averageRating: { $avg: '$rating' }, // Calculate average rating
-            totalEarnings: { $sum: '$price' }, // Sum up all job prices (earnings)
+            _id: '$worker', 
+            jobCount: { $sum: 1 }, 
+            averageRating: { $avg: '$rating' }, 
+            totalEarnings: { $sum: '$price' }, 
           },
         },
         {
           $lookup: {
-            from: 'users', // Lookup worker details from User collection
-            localField: '_id', // Match worker ID in Job collection
-            foreignField: '_id', // Match user ID in User collection
+            from: 'users', 
+            localField: '_id', 
+            foreignField: '_id', 
             as: 'workerDetails',
           },
         },
         {
-          $unwind: '$workerDetails', // Flatten worker details array
+          $unwind: '$workerDetails', 
         },
         {
           $project: {
-            _id: 0, // Exclude MongoDB _id
-            workerId: '$_id', // Include worker ID
-            fullName: '$workerDetails.full_name', // Worker name
-            email: '$workerDetails.email', // Worker email
-            phoneNumber: '$workerDetails.phone_number', // Worker phone
-            address: '$workerDetails.worker_profile.address', // Worker address
-            jobCount: 1, // Total number of jobs
-            averageRating: { $round: ['$workerDetails.worker_profile.rating', 2] }, // Average rating (rounded)
-            totalEarnings: 1, // Total earnings from jobs
+            _id: 0, 
+            workerId: '$_id', 
+            fullName: '$workerDetails.full_name', 
+            email: '$workerDetails.email', 
+            phoneNumber: '$workerDetails.phone_number', 
+            address: '$workerDetails.worker_profile.address', 
+            jobCount: 1, 
+            averageRating: { $round: ['$workerDetails.worker_profile.rating', 2] }, 
+            totalEarnings: 1, 
             isVerified: '$workerDetails.worker_profile.is_verified',
-            identity_number:'$workerDetails.worker_profile.identity_number', // Verification status
+            identity_number:'$workerDetails.worker_profile.identity_number', 
           },
         },
         {
-          $sort: { jobCount: -1 }, // Sort by number of jobs (highest first)
+          $sort: { jobCount: -1 }, 
         },
       ]);
   
@@ -456,10 +454,10 @@ const getServiceRevenue = async (req, res) => {
   const getJobReviews = async (req, res) => {
     try {
       const jobReviews = await Job.find(
-        { rating: { $exists: true } } // Chỉ lấy các job có đánh giá
+        { rating: { $exists: true } }
       )
-        .populate('service', 'name') // Lấy tên dịch vụ liên quan
-        .select('service rating service_comments'); // Chỉ lấy các trường cần thiết
+        .populate('service', 'name') 
+        .select('service rating service_comments'); 
   
       res.status(200).json({
         success: true,
@@ -476,10 +474,10 @@ const getServiceRevenue = async (req, res) => {
   const getWorkerReviews = async (req, res) => {
     try {
       const workerReviews = await User.find(
-        { role: 'worker' } // Chỉ lấy nhân viên
+        { role: 'worker' } 
       )
-        .populate('worker_profile.reviews.job_id', 'service') // Liên kết với job để lấy dịch vụ liên quan
-        .select('full_name worker_profile.reviews'); // Chỉ lấy tên nhân viên và danh sách đánh giá
+        .populate('worker_profile.reviews.job_id', 'service') 
+        .select('full_name worker_profile.reviews'); 
   
       const formattedReviews = workerReviews.map((worker) => ({
         full_name: worker.full_name,
@@ -503,8 +501,32 @@ const getServiceRevenue = async (req, res) => {
       });
     }
   };
+  const blockWorkerAccount = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action } = req.body;
+  
+      if (!id || !action) {
+        return res.status(400).json({ success: false, message: 'Missing required parameters.' });
+      }
+  
+      const worker = await User.findById(id);
+  
+      if (!worker) {
+        return res.status(404).json({ success: false, message: 'Worker not found.' });
+      }
+  
+      worker.worker_profile.is_verified = action === 'block' ? 'blocked' : 'approved';
+      await worker.save();
+  
+      return res.status(200).json({ success: true, message: 'Worker status updated successfully.' });
+    } catch (error) {
+      console.error('Error updating worker status:', error);
+      return res.status(500).json({ success: false, message: 'Error updating worker status.', error });
+    }
+  };
   
   module.exports = { getPendingWorkers, reviewWorker,updateServicePrice,
     getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
-    getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers,getJobReviews  };
+    getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers,getJobReviews,blockWorkerAccount  };
   

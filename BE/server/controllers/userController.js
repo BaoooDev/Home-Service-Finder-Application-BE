@@ -61,11 +61,8 @@ const registerClient = async (req, res) => {
 
 const registerWorker = async (req, res) => {
   try {
-    // Lấy thông tin từ body
     const { password, email, full_name, identity_number,
       phone_number, address, services } = req.body
-
-    // Kiểm tra các trường có được cung cấp hay không
     if (!password || !full_name || !identity_number || !email) {
       return res
         .status(400)
@@ -82,15 +79,12 @@ const registerWorker = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email đã tồn tại trong hệ thống' })
     }
 
-    // Khởi tạo profile cho worker
     const worker_profile = {
       identity_number,
       is_verified: 'pending',
-      address, // Chưa được xác thực
+      address, 
       
     }
-
-    // Tạo một user mới và lưu vào cơ sở dữ liệu
     let user = new User({
       password,
       email: email.toLowerCase(),
@@ -98,27 +92,21 @@ const registerWorker = async (req, res) => {
       address,
       phone_number,
       role: 'worker',
-      worker_profile, // Đính kèm profile của worker
+      worker_profile, 
     })
-
-    // Mã hóa mật khẩu trước khi lưu
     const salt = await bcrypt.genSalt(10)
     user.password = await bcrypt.hash(password, salt)
 
-    // Lưu người dùng vào cơ sở dữ liệu
     await user.save()
 
-    // Tạo JWT token
     const token = createToken(user)
-
-    // Gửi phản hồi cho client
     res.status(200).json({
       _id: user._id,
       email,
       full_name,
       phone_number,
       worker_profile,
-      token, // JWT Token để client sử dụng cho các yêu cầu khác
+      token, 
     })
   } catch (error) {
     console.log(error)
@@ -130,19 +118,16 @@ const loginAdmin = async (req, res) => {
   const { email, password } = req.body
 
   try {
-    // Tìm người dùng với email và role là client
     const user = await User.findOne({ email, role: 'admin' })
     if (!user) {
       return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
 
-    // So sánh mật khẩu
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
       return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
 
-    // Tạo JWT
     const token = createToken(user)
 
     // Gửi phản hồi với token
@@ -180,12 +165,10 @@ const loginClient = async (req, res) => {
   }
 }
 
-// Đăng nhập Worker
 const loginWorker = async (req, res) => {
   const { email, password } = req.body
 
   try {
-    // Tìm người dùng với email
     const user = await User.findOne({ email: email.toLowerCase(), role: 'worker' })
     if (!user) {
       return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
@@ -197,13 +180,6 @@ const loginWorker = async (req, res) => {
       return res.status(400).json({ msg: 'Vui lòng nhập đúng tài khoản và mật khẩu' })
     }
 
-    // if (!user.worker_profile.is_verified) {
-    //   return res
-    //     .status(400)
-    //     .json({ msg: 'Tài khoản chưa được xác minh vui lòng liên hệ admin để xử lý' })
-    // }
-
-    // Tạo JWT
     const token = createToken(user)
 
     res.json({ token })
@@ -224,7 +200,6 @@ const getMe = async (req, res) => {
 
   const completedJobs = await Job.find({
     status: 'completed',
-    completion_time: { $gte: startOfWeek, $lte: endOfWeek },
     payment_status: 'paid',
     worker: user.id
   })

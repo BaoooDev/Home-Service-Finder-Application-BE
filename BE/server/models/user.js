@@ -33,7 +33,7 @@ const WorkerProfileSchema = new mongoose.Schema({
   ],
  is_verified: { 
     type: String, 
-    enum: ['pending', 'approved', 'rejected'], 
+    enum: ['pending', 'approved', 'rejected','blocked'], 
     default: 'pending' 
   },  services: [{ type: Schema.Types.ObjectId, ref: 'Service' }],
   address: { type: String },

@@ -38,7 +38,7 @@ const { createNoti, queryNoties } = require('../controllers/notiController')
 const { queryServices,getServiceDetails } = require('../controllers/serviceController')
 const { getPendingWorkers, reviewWorker,updateServicePrice,
   getTotalRevenue,getServiceRevenue,getMostBookedService,getWorkerRankings,getWorkerReviews,
-  getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers,getJobReviews
+  getMonthlyRevenue,getTopClients,getAllJobs,getAllWorkers,getJobReviews,blockWorkerAccount
  } = require('../controllers/adminController')
 
 //Authen
@@ -98,6 +98,5 @@ router.get('/stats/top-clients', authenticateJWT, getTopClients);
 router.get('/stats/jobs', authenticateJWT, getAllJobs);
 router.get('/stats/workers', authenticateJWT, getAllWorkers);
 router.get('/reviews/jobs', authenticateJWT, getJobReviews);
-
-
+router.put('/workers/:id/block', authenticateJWT, blockWorkerAccount);
 module.exports = router

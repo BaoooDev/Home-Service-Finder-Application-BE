@@ -8,69 +8,50 @@ const moment = require('moment')
 const createToken = (user) => {
   const jwtkey = process.env.JWT_SECRET_KEY
   const payload = {
-    id: user._id, // Sử dụng _id thay vì id
+    id: user._id,
     username: user.username,
-    role: user.role, // Thêm role để phân quyền
+    role: user.role, 
   }
   return jwt.sign(payload, jwtkey, { expiresIn: '3d' })
 }
 
 const registerClient = async (req, res) => {
   try {
-    // Lấy thông tin từ body
     const { password, email, full_name } = req.body
 
-    // Kiểm tra các trường có được cung cấp hay không
     if (!password || !full_name || !email) {
       return res.status(400).json({ success: false, message: 'Không để trống các trường' })
     }
 
-    // Kiểm tra định dạng email
     if (!validator.isEmail(email)) {
       return res.status(400).json({ success: false, message: 'Email phải là email hợp lệ...' })
     }
 
-    // Kiểm tra email đã tồn tại chưa
     let existingUser = await User.findOne({ email })
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email đã tồn tại trong hệ thống' })
     }
 
-    // Kiểm tra độ mạnh của mật khẩu (có thể bật nếu cần)
-    // if (!validator.isStrongPassword(password)) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: "Mật khẩu phải đủ mạnh..." });
-    // }
+    const client_profile = { jobs: [] }
 
-    // Khởi tạo profile client (nếu cần) hoặc để trống
-    const client_profile = { jobs: [] } // Mặc định client không có việc làm
-
-    // Tạo người dùng mới
     let user = new User({
       password,
       email,
       full_name,
       role: 'client',
-      client_profile, // Thêm profile của client
+      client_profile, 
     })
 
-    // Mã hóa mật khẩu trước khi lưu
     const salt = await bcrypt.genSalt(10)
     user.password = await bcrypt.hash(password, salt)
 
-    // Lưu người dùng vào cơ sở dữ liệu
     await user.save()
-
-    // Tạo JWT token
-    const token = createToken(user) // Hàm này sẽ tạo JWT token
-
-    // Gửi lại phản hồi cho client
+    const token = createToken(user)
     res.status(200).json({
       _id: user._id,
       email: user.email,
       full_name: user.full_name,
-      token, // Token để client sử dụng cho các yêu cầu tiếp theo
+      token, 
     })
   } catch (error) {
     console.log(error)
@@ -96,14 +77,6 @@ const registerWorker = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email phải là email hợp lệ...' })
     }
 
-    // Kiểm tra độ mạnh của mật khẩu
-    //   if (!validator.isStrongPassword(password)) {
-    //     return res
-    //       .status(400)
-    //       .json({ success: false, message: "Mật khẩu phải đủ mạnh..." });
-    //   }
-
-    // Kiểm tra email đã tồn tại chưa
     let existingUser = await User.findOne({ email })
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email đã tồn tại trong hệ thống' })
